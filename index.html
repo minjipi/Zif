@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>MP4 → GIF 타임라인 편집기</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+        }
+
+        #drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        #drop-zone.dragover {
+            border-color: #007cba;
+            background-color: #e3f2fd;
+            transform: scale(1.02);
+        }
+
+        #drop-zone:hover {
+            border-color: #999;
+            background-color: #f0f0f0;
+        }
+
+        #drop-zone p {
+            margin: 10px 0;
+            color: #666;
+        }
+
+        #drop-zone .main-text {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #video-uploader {
+            display: none;
+        }
+
+        #thumbnail-strip {
+            position: relative;
+            display: flex;
+            overflow-x: auto;
+            height: 80px;
+            border: 1px solid #ccc;
+            background-color: #eee;
+            white-space: nowrap;
+            margin-top: 10px;
+        }
+
+        .thumb {
+            width: 100px;
+            height: 60px;
+            object-fit: cover;
+            flex-shrink: 0;
+            margin-right: 2px;
+            user-drag: none;
+            -webkit-user-drag: none;
+        }
+
+        #selection {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background-color: rgba(10, 10, 10, 0.3);
+            pointer-events: none;
+        }
+
+        .handle {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background-color: white;
+            cursor: ew-resize;
+            pointer-events: auto;
+            z-index: 10;
+        }
+
+        .handle:hover {
+            background-color: #ff0;
+        }
+
+        #cut-range {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        #conversion-options {
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        #conversion-options h3 {
+            margin: 0 0 15px 0;
+            color: #333;
+        }
+
+        .options {
+            margin-bottom: 15px;
+        }
+
+        .options label {
+            display: inline-block;
+            width: 140px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .fixed-width {
+            width: 140px !important;
+        }
+
+        .options input,
+        .options select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            margin-right: 10px;
+        }
+
+        .options select {
+            width: 200px;
+        }
+
+        .options input[type="number"] {
+            width: 80px;
+        }
+
+        .btn {
+            background-color: #007cba;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .btn:hover {
+            background-color: #005a8a;
+        }
+
+        .btn.primary {
+            background-color: #28a745;
+            font-size: 16px;
+            padding: 12px 24px;
+        }
+
+        .btn.primary:hover {
+            background-color: #218838;
+        }
+
+        .btn.small {
+            font-size: 11px;
+            padding: 6px 10px;
+        }
+
+        .checkbox {
+            display: flex;
+            align-items: center;
+            font-weight: normal !important;
+            width: auto !important;
+        }
+
+        .checkbox input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+
+        #o-static {
+            margin-top: 8px;
+        }
+
+        #gif-preview {
+            max-width: 300px;
+            margin-top: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin-top: 10px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>🎞️ MP4 → GIF 타임라인 편집기</h2>
+    <p id="message" style="display: none;">Loading FFmpeg...</p>
+
+    <div id="drop-zone">
+        <p class="main-text">🎬 MP4 파일을 여기에 드래그하거나 클릭하세요</p>
+        <p>또는 아래 버튼을 사용하세요</p>
+    </div>
+
+    <input type="file" id="video-uploader" accept="video/mp4" />
+
+    <div id="thumbnail-strip" style="display: none;">
+        <div id="selection">
+            <div id="left-handle" class="handle"></div>
+            <div id="right-handle" class="handle"></div>
+        </div>
+    </div>
+
+    <div id="cut-range">⏱️ 구간 선택: 없음</div>
+
+    <!-- 변환 설정 옵션 -->
+    <div id="conversion-options">
+        <h3>🔧 변환 설정</h3>
+
+        <p class="options">
+            <label>Start time (seconds):
+                <input type="number" step="any" size="4" id="start" name="start" class="text number" value="0">
+            </label>
+            <input class="btn primary small" type="button" id="read_pos_start" value="Use current position"><br>
+
+            <label>End time (seconds):
+                <input type="number" step="any" size="4" id="end" name="end" value="3.0">
+            </label>
+            <input class="btn primary small" type="button" id="read_pos_end" value="Use current position"><br>
+        </p>
+
+        <p class="options">
+            <label for="size" class="fixed-width">Size:</label>
+            <select name="size" id="size">
+                <option value="original">Original (up to 800px)</option>
+                <option value="600">600xAUTO</option>
+                <option value="540">540xAUTO (for Tumblr)</option>
+                <option value="500">500xAUTO</option>
+                <option value="480">480xAUTO</option>
+                <option value="400">400xAUTO</option>
+                <option value="320" selected="selected">320xAUTO</option>
+                <option value="480p">AUTOx480</option>
+                <option value="320p">AUTOx320</option>
+                <option value="1200w">up to 1200x300 (for wide banner)</option>
+                <option value="1200h">up to 300x1200 (for skyscraper banner)</option>
+            </select><br>
+
+            <label for="fps" class="fixed-width">Frame rate (FPS):</label>
+            <select name="fps" id="fps">
+                <option value="5">5 (max 60 seconds)</option>
+                <option value="7">7 (max 42 seconds)</option>
+                <option value="8">8 (max 35 seconds)</option>
+                <option value="10" selected="selected">10 (max 30 seconds)</option>
+                <option value="12">12 (max 25 seconds)</option>
+                <option value="16">16 (max 20 seconds)</option>
+                <option value="20">20 (max 15 seconds)</option>
+                <option value="25">25 (max 12 seconds)</option>
+                <option value="33">33 (max 10 seconds)</option>
+            </select><br>
+
+            <label for="method" class="fixed-width">Method:</label>
+            <select class="video-to-gif-tool" name="method" id="method">
+                <option value="ffmpeg" selected="selected">FFMPEG</option>
+                <option value="preserve-transparency">Preserve transparency</option>
+                <option value="old">FFMPEG + ImageMagick (legacy)</option>
+            </select>
+
+            <span id="o-static" style="display:block;padding-top:4px;">
+                <label class="checkbox">
+                    <input type="checkbox" name="diff" id="optimize-static">
+                    Optimize for static background
+                </label>
+            </span>
+        </p>
+    </div>
+
+    <button id="convert-btn" disabled>🎬 선택 구간 GIF로 변환</button>
+
+    <p><a id="download-link" style="display:none;" download="output.gif">📥 Download GIF</a></p>
+    <img id="gif-preview" src="" alt="GIF preview" style="display: none;" />
+
+    <script src="/ffmpeg.min.js"></script>
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        const ffmpeg = createFFmpeg({ log: true });
+
+        const videoUploader = document.getElementById("video-uploader");
+        const message = document.getElementById("message");
+        const convertBtn = document.getElementById("convert-btn");
+        const downloadLink = document.getElementById("download-link");
+        const gifPreview = document.getElementById("gif-preview");
+        const strip = document.getElementById("thumbnail-strip");
+        const selection = document.getElementById("selection");
+        const cutRange = document.getElementById("cut-range");
+        const dropZone = document.getElementById("drop-zone");
+        const conversionOptions = document.getElementById("conversion-options");
+
+        const leftHandle = document.getElementById("left-handle");
+        const rightHandle = document.getElementById("right-handle");
+
+        const THUMB_WIDTH = 102;
+        const NUM_THUMBS = 30;
+        let videoFile;
+        let duration = 0;
+        let startX = 0, endX = 0, isDragging = false;
+        let draggingHandle = null;
+
+        let autoScrollDirection = 0;
+        let autoScrollRAF = null;
+
+        const loadFFmpeg = async () => {
+            try {
+                await ffmpeg.load();
+                if (ffmpeg.isLoaded()) {
+                    // FFmpeg 로드 성공 시에도 메시지를 표시하지 않음
+                } else {
+                    message.style.display = "block";
+                    message.textContent = "❌ FFmpeg failed to initialize properly.";
+                }
+            } catch (err) {
+                console.error("FFmpeg loading error:", err);
+                message.style.display = "block";
+                message.textContent = "❌ Failed to load FFmpeg.";
+            }
+        };
+        loadFFmpeg();
+
+        // Method 변경 시 옵션 표시/숨김
+        document.getElementById('method').addEventListener('change', function () {
+            if (document.getElementById('method').value === 'ffmpeg') {
+                document.getElementById('o-static').style.display = 'block';
+            } else {
+                document.getElementById('o-static').style.display = 'none';
+            }
+        });
+
+        // 현재 위치 사용 버튼들
+        document.getElementById('read_pos_start').addEventListener('click', function () {
+            const [startIdx, endIdx] = getSelectedIndexes();
+            const startSec = ((startIdx / NUM_THUMBS) * duration).toFixed(3);
+            document.getElementById('start').value = startSec;
+        });
+
+        document.getElementById('read_pos_end').addEventListener('click', function () {
+            const [startIdx, endIdx] = getSelectedIndexes();
+            const endSec = ((endIdx / NUM_THUMBS) * duration).toFixed(3);
+            document.getElementById('end').value = endSec;
+        });
+
+        // 드래그앤드롭 이벤트 처리
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type === 'video/mp4') {
+                    handleVideoFile(file);
+                } else {
+                    alert('MP4 파일만 지원됩니다.');
+                }
+            }
+        });
+
+        dropZone.addEventListener('click', () => {
+            videoUploader.click();
+        });
+
+        videoUploader.addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleVideoFile(file);
+            }
+        });
+
+        async function handleVideoFile(file) {
+            videoFile = file;
+            const url = URL.createObjectURL(file);
+
+            // UI 업데이트
+            dropZone.classList.add('hidden');
+            strip.style.display = "flex";
+            conversionOptions.style.display = "block";
+            convertBtn.disabled = false;
+
+            await renderThumbnails(url);
+        }
+
+        async function renderThumbnails(videoURL) {
+            const video = document.createElement("video");
+            video.src = videoURL;
+            video.crossOrigin = "anonymous";
+            await new Promise(res => (video.onloadedmetadata = res));
+            duration = video.duration;
+
+            // End time 기본값을 실제 동영상 길이로 설정
+            document.getElementById('end').value = duration.toFixed(3);
+
+            strip.innerHTML = "";
+            strip.appendChild(selection);
+            selection.appendChild(leftHandle);
+            selection.appendChild(rightHandle);
+
+            const interval = duration / NUM_THUMBS;
+            const canvas = document.createElement("canvas");
+            canvas.width = 160;
+            canvas.height = 90;
+            const ctx = canvas.getContext("2d");
+
+            for (let i = 0; i < NUM_THUMBS; i++) {
+                const time = i * interval;
+                const frame = await extractFrameAt(video, time, canvas, ctx);
+
+                const img = document.createElement("img");
+                img.src = frame;
+                img.className = "thumb";
+                img.dataset.index = i;
+                img.ondragstart = () => false;
+                strip.appendChild(img);
+            }
+
+            startX = 0;
+            endX = THUMB_WIDTH * 5;
+            updateSelection();
+        }
+
+        async function extractFrameAt(video, time, canvas, ctx) {
+            return new Promise((resolve) => {
+                const seekHandler = () => {
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const dataURL = canvas.toDataURL("image/jpeg");
+                    resolve(dataURL);
+                    video.removeEventListener("seeked", seekHandler);
+                };
+                video.addEventListener("seeked", seekHandler);
+                video.currentTime = time;
+            });
+        }
+
+        function updateSelection() {
+            const x1 = Math.min(startX, endX);
+            const x2 = Math.max(startX, endX);
+            selection.style.left = `${x1}px`;
+            selection.style.width = `${x2 - x1}px`;
+
+            leftHandle.style.left = `0px`;
+            rightHandle.style.right = `0px`;
+
+            updateTimeRange();
+        }
+
+        function updateTimeRange() {
+            if (duration > 0) {
+                const [startIdx, endIdx] = getSelectedIndexes();
+                const startSec = ((startIdx / NUM_THUMBS) * duration).toFixed(1);
+                const endSec = ((endIdx / NUM_THUMBS) * duration).toFixed(1);
+                cutRange.textContent = `⏱️ 구간 선택: ${startSec}s ~ ${endSec}s`;
+
+                // 입력 필드도 업데이트
+                document.getElementById('start').value = startSec;
+                document.getElementById('end').value = endSec;
+            }
+        }
+
+        function getSelectedIndexes() {
+            const x1 = Math.min(startX, endX);
+            const x2 = Math.max(startX, endX);
+            const startIdx = Math.floor(x1 / THUMB_WIDTH);
+            const endIdx = Math.floor(x2 / THUMB_WIDTH);
+            return [startIdx, endIdx];
+        }
+
+        function autoScroll() {
+            if (autoScrollDirection === 0 || (!isDragging && !draggingHandle)) return;
+
+            const scrollStep = 5;
+
+            if (autoScrollDirection === -1 && strip.scrollLeft > 0) {
+                strip.scrollLeft -= scrollStep;
+                if (draggingHandle === "left") startX -= scrollStep;
+                else if (draggingHandle === "right") endX -= scrollStep;
+                else endX -= scrollStep;
+            } else if (autoScrollDirection === 1) {
+                strip.scrollLeft += scrollStep;
+                if (draggingHandle === "left") startX += scrollStep;
+                else if (draggingHandle === "right") endX += scrollStep;
+                else endX += scrollStep;
+            }
+
+            updateSelection();
+            autoScrollRAF = requestAnimationFrame(autoScroll);
+        }
+
+        strip.addEventListener("mousedown", (e) => {
+            if (e.target.classList.contains("handle")) return;
+
+            const bounding = strip.getBoundingClientRect();
+            const isScrollbarClick = (e.offsetY > strip.clientHeight);
+            if (isScrollbarClick) return;
+
+            isDragging = true;
+            const rect = strip.getBoundingClientRect();
+            startX = e.clientX - rect.left + strip.scrollLeft;
+            endX = startX;
+            updateSelection();
+        });
+
+        strip.addEventListener("mousemove", (e) => {
+            if (!isDragging && !draggingHandle) return;
+
+            const rect = strip.getBoundingClientRect();
+            const x = e.clientX - rect.left + strip.scrollLeft;
+
+            if (isDragging) {
+                endX = x;
+            } else if (draggingHandle === "left") {
+                startX = x;
+            } else if (draggingHandle === "right") {
+                endX = x;
+            }
+
+            updateSelection();
+
+            const EDGE_THRESHOLD = 50;
+            const mouseX = e.clientX - rect.left;
+
+            if (mouseX < EDGE_THRESHOLD) {
+                autoScrollDirection = -1;
+            } else if (mouseX > rect.width - EDGE_THRESHOLD) {
+                autoScrollDirection = 1;
+            } else {
+                autoScrollDirection = 0;
+            }
+
+            if ((isDragging || draggingHandle) && !autoScrollRAF) {
+                autoScroll();
+            }
+        });
+
+        document.addEventListener("mouseup", () => {
+            if (isDragging || draggingHandle) {
+                isDragging = false;
+                draggingHandle = null;
+                autoScrollDirection = 0;
+                cancelAnimationFrame(autoScrollRAF);
+                autoScrollRAF = null;
+            }
+        });
+
+        leftHandle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            draggingHandle = "left";
+        });
+
+        rightHandle.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            draggingHandle = "right";
+        });
+
+        convertBtn.addEventListener("click", async () => {
+            if (!videoFile) return;
+
+            // 설정 값들 가져오기
+            const startSec = parseFloat(document.getElementById('start').value) || 0;
+            const endSec = parseFloat(document.getElementById('end').value) || duration;
+            const clipDuration = Math.max(0.1, endSec - startSec);
+            const gifSize = document.getElementById('size').value;
+            const gifFps = parseInt(document.getElementById('fps').value);
+            const method = document.getElementById('method').value;
+            const optimizeStatic = document.getElementById('optimize-static').checked;
+
+            message.style.display = "block";
+            message.textContent = `⏳ Converting ${startSec.toFixed(1)}s ~ ${endSec.toFixed(1)}s to GIF...`;
+
+            ffmpeg.FS("writeFile", "input.mp4", await fetchFile(videoFile));
+
+            // 크기 설정
+            let scaleFilter = "scale=320:-1";
+            if (gifSize === "original") {
+                scaleFilter = "scale='min(800,iw)':'min(600,ih)':force_original_aspect_ratio=decrease";
+            } else if (gifSize.endsWith("p")) {
+                const height = gifSize.replace("p", "");
+                scaleFilter = `scale=-1:${height}`;
+            } else if (gifSize.endsWith("w")) {
+                scaleFilter = "scale='min(1200,iw)':'min(300,ih)':force_original_aspect_ratio=decrease";
+            } else if (gifSize.endsWith("h")) {
+                scaleFilter = "scale='min(300,iw)':'min(1200,ih)':force_original_aspect_ratio=decrease";
+            } else if (!isNaN(gifSize)) {
+                scaleFilter = `scale=${gifSize}:-1`;
+            }
+
+            // 고품질 팔레트 생성
+            let filterComplex = scaleFilter;
+            if (method === "ffmpeg") {
+                filterComplex = `${scaleFilter},split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3`;
+            }
+
+            const ffmpegArgs = [
+                "-i", "input.mp4",
+                "-ss", `${startSec}`,
+                "-t", `${clipDuration}`,
+                "-r", `${gifFps}`,
+                "-filter_complex", filterComplex
+            ];
+
+            if (method === "preserve-transparency") {
+                ffmpegArgs.push("-f", "gif", "-pix_fmt", "rgba");
+            }
+
+            ffmpegArgs.push("output.gif");
+
+            await ffmpeg.run(...ffmpegArgs);
+
+            const data = ffmpeg.FS("readFile", "output.gif");
+            const gifBlob = new Blob([data.buffer], { type: "image/gif" });
+            const gifURL = URL.createObjectURL(gifBlob);
+
+            downloadLink.href = gifURL;
+            downloadLink.style.display = "inline";
+            gifPreview.src = gifURL;
+            gifPreview.style.display = "block";
+
+            const fileSizeMB = (gifBlob.size / (1024 * 1024)).toFixed(2);
+            message.textContent = `✅ Done! GIF created (${fileSizeMB}MB). Download below.`;
+        });
+
+        // 전체 페이지에서 드래그앤드롭 방지
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+
+</html>
