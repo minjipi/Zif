@@ -1,658 +1,1033 @@
-<!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 
 <head>
-    <meta charset="UTF-8" />
-    <title>MP4 → GIF 타임라인 편집기</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎞️ ZIF - 프리미엄 Video to GIF 변환기</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bitcount:wght@400&display=swap"
+        rel="stylesheet">
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f3f3f3 0%, #dce6f8 100%);
+            min-height: 100vh;
+            margin: 0;
             padding: 20px;
         }
 
-        #drop-zone {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            margin: 20px 0;
-            background-color: #f9f9f9;
-            transition: all 0.3s ease;
-            cursor: pointer;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
         }
 
-        #drop-zone.dragover {
-            border-color: #007cba;
-            background-color: #e3f2fd;
+        .header {
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .language-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #f6ab7a 0%, #e6956a 100%);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .language-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(246, 171, 122, 0.4);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            font-family: 'Bitcount', 'Inter', sans-serif;
+            color: #2d3748;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h3 {
+            margin: 10px 0;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            color: #4a5568;
+        }
+
+        .tagline {
+            color: #718096;
+            font-size: 0.9rem;
+            font-style: italic;
+            margin: 10px 0;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .upload-section {
+            background: #f3f3f3;
+            border: 2px dashed #dce6f8;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .upload-section:hover {
+            border-color: #f6ab7a;
+            background: #faf9f8;
+            transform: translateY(-2px);
+        }
+
+        .upload-section.dragover {
+            border-color: #f6ab7a;
+            background: #faf9f8;
             transform: scale(1.02);
         }
 
-        #drop-zone:hover {
-            border-color: #999;
-            background-color: #f0f0f0;
-        }
-
-        #drop-zone p {
-            margin: 10px 0;
-            color: #666;
-        }
-
-        #drop-zone .main-text {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-        }
-
-        #video-uploader {
-            display: none;
-        }
-
-        #thumbnail-strip {
-            position: relative;
-            display: flex;
-            overflow-x: auto;
-            height: 80px;
-            border: 1px solid #ccc;
-            background-color: #eee;
-            white-space: nowrap;
-            margin-top: 10px;
-        }
-
-        .thumb {
-            width: 100px;
-            height: 60px;
-            object-fit: cover;
-            flex-shrink: 0;
-            margin-right: 2px;
-            user-drag: none;
-            -webkit-user-drag: none;
-        }
-
-        #selection {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            background-color: rgba(10, 10, 10, 0.3);
-            pointer-events: none;
-        }
-
-        .handle {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 4px;
-            background-color: white;
-            cursor: ew-resize;
-            pointer-events: auto;
-            z-index: 10;
-        }
-
-        .handle:hover {
-            background-color: #ff0;
-        }
-
-        #cut-range {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        #conversion-options {
-            background-color: #f8f9fa;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
-            display: none;
-        }
-
-        #conversion-options h3 {
-            margin: 0 0 15px 0;
-            color: #333;
-        }
-
-        .options {
+        .upload-icon {
+            font-size: 3rem;
             margin-bottom: 15px;
+            color: #f6ab7a;
         }
 
-        .options label {
-            display: inline-block;
-            width: 140px;
-            font-weight: bold;
-            margin-bottom: 5px;
+        .upload-text {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
         }
 
-        .fixed-width {
-            width: 140px !important;
+        .upload-subtext {
+            color: #718096;
+            font-size: 0.9rem;
         }
 
-        .options input,
-        .options select {
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: white;
-            margin-right: 10px;
+        #videoInput {
+            display: none;
         }
 
-        .options select {
-            width: 200px;
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
         }
 
-        .options input[type="number"] {
-            width: 80px;
+        .setting-group {
+            background: linear-gradient(135deg, #f3f3f3 0%, #dce6f8 100%);
+            padding: 25px;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+            position: relative;
+            transition: all 0.3s ease;
         }
 
-        .btn {
-            background-color: #007cba;
+        .setting-group:hover {
+            border-color: #f6ab7a;
+            box-shadow: 0 8px 25px rgba(246, 171, 122, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .tooltip {
+            position: absolute;
+            bottom: -80px;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+            width: 320px;
+            transform: translateY(-10px);
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            text-align: center;
+            line-height: 1.5;
+            z-index: 2000;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .tooltip::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 10px solid #2d3748;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .setting-group label {
+            display: block;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 1rem;
+        }
+
+        .setting-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+            font-weight: 500;
+        }
+
+        .setting-group input:focus {
+            outline: none;
+            border-color: #f6ab7a;
+            box-shadow: 0 0 0 4px rgba(246, 171, 122, 0.1);
+            background: white;
+        }
+
+        .convert-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f6ab7a 0%, #e6956a 100%);
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 4px;
+            padding: 20px 30px;
+            border-radius: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
             cursor: pointer;
-            font-size: 12px;
+            transition: all 0.3s ease;
+            margin-bottom: 30px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn:hover {
-            background-color: #005a8a;
+        .convert-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
         }
 
-        .btn.primary {
-            background-color: #28a745;
-            font-size: 16px;
-            padding: 12px 24px;
+        .convert-btn:hover:not(:disabled)::before {
+            left: 100%;
         }
 
-        .btn.primary:hover {
-            background-color: #218838;
+        .convert-btn:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(246, 171, 122, 0.4);
         }
 
-        .btn.small {
-            font-size: 11px;
-            padding: 6px 10px;
+        .convert-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
 
-        .checkbox {
+        .preview-section,
+        .output-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #2d3748;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
-            font-weight: normal !important;
-            width: auto !important;
+            gap: 12px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #dce6f8;
         }
 
-        .checkbox input[type="checkbox"] {
-            margin-right: 8px;
-            width: auto;
+        #preview {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            border-radius: 15px;
+            border: 2px solid #e1e5f2;
         }
 
-        #o-static {
-            margin-top: 8px;
+        #preview::-webkit-scrollbar {
+            height: 10px;
         }
 
-        #gif-preview {
-            max-width: 300px;
-            margin-top: 10px;
+        #preview::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 5px;
         }
 
-        button {
+        #preview::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #f6ab7a, #e6956a);
+            border-radius: 5px;
+        }
+
+        #preview img {
+            max-height: 100px;
+            border-radius: 10px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border: 2px solid white;
+        }
+
+        #preview img:hover {
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .output-section {
+            text-align: center;
+        }
+
+        #output img {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            margin-bottom: 25px;
+            border: 3px solid white;
+        }
+
+        #downloadLink {
+            display: inline-block;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            text-decoration: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(72, 187, 120, 0.4);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #downloadLink::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s ease;
+        }
+
+        #downloadLink:hover::before {
+            left: 100%;
+        }
+
+        #downloadLink:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(72, 187, 120, 0.5);
+        }
+
+        .advanced-settings {
+            background: linear-gradient(135deg, #f3f3f3 0%, #dce6f8 100%);
+            border-radius: 20px;
+            padding: 0;
+            margin-top: 30px;
+            border: 2px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .advanced-settings-header {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 20px 25px;
+            transition: all 0.3s ease;
+        }
+
+        .advanced-settings-header:hover {
+            background: linear-gradient(135deg, #1a202c 0%, #171923 100%);
+        }
+
+        .advanced-settings-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .toggle-icon {
+            font-size: 1.5rem;
+            transition: transform 0.4s ease;
+            font-weight: bold;
+        }
+
+        .toggle-icon.rotated {
+            transform: rotate(180deg);
+        }
+
+        .advanced-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            padding: 0 25px;
+        }
+
+        .advanced-content.expanded {
+            max-height: 800px;
+            padding: 25px;
+        }
+
+        .quality-badge {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #2d3748;
             padding: 10px 20px;
-            margin-top: 10px;
+            border-radius: 25px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
         }
 
-        .hidden {
-            display: none !important;
+        canvas,
+        video {
+            display: none;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            color: #2d3748;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #f6ab7a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tooltip {
+                width: 280px;
+                font-size: 0.8rem;
+                bottom: -70px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .content {
+                padding: 25px 20px;
+            }
+
+            .language-toggle {
+                position: static;
+                margin-bottom: 20px;
+            }
         }
     </style>
 </head>
 
 <body>
-    <h2>🎞️ MP4 → GIF 타임라인 편집기</h2>
-    <p id="message" style="display: none;">Loading FFmpeg...</p>
+    <div class="container">
+        <div class="header">
+            <button class="language-toggle" onclick="toggleLanguage()">
+                <span id="langToggleText">한국어</span>
+            </button>
+            <h1 id="title">ZIF</h1>
+            <h3 id="subtitle">Premium Video to GIF Converter</h3>
+            <p class="tagline" id="tagline">최고 품질의 GIF 변환을 위한 안전하고 혁신적인 솔루션</p>
+        </div>
 
-    <div id="drop-zone">
-        <p class="main-text">🎬 MP4 파일을 여기에 드래그하거나 클릭하세요</p>
-        <p>또는 아래 버튼을 사용하세요</p>
-    </div>
+        <div class="content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">📁</div>
+                <div class="upload-text" id="uploadText">비디오 파일을 선택하세요</div>
+                <div class="upload-subtext" id="uploadSubtext">클릭하거나 드래그 & 드롭으로 업로드하면 자동으로 GIF가 생성됩니다.</div>
+                <input type="file" id="videoInput" accept="video/*">
+            </div>
 
-    <input type="file" id="video-uploader" accept="video/mp4" />
+            <div class="preview-section" id="previewSection" style="display: none;">
+                <div class="section-title">
+                    <span>📸</span>
+                    <span id="previewTitle">프레임 미리보기</span>
+                </div>
+                <div id="preview"></div>
+            </div>
 
-    <div id="thumbnail-strip" style="display: none;">
-        <div id="selection">
-            <div id="left-handle" class="handle"></div>
-            <div id="right-handle" class="handle"></div>
+            <div class="output-section" id="outputSection" style="display: none;">
+                <div class="section-title">
+                    <span>✨</span>
+                    <span id="outputTitle">생성된 GIF</span>
+                </div>
+                <div id="output"></div>
+                <a id="downloadLink" style="display:none;" download="output.gif">
+                    <span id="downloadText">📥 GIF 다운로드</span>
+                </a>
+
+                <div class="advanced-settings" id="advancedSettings">
+                    <div class="advanced-settings-header" id="advancedToggle">
+                        <div class="advanced-settings-title">
+                            <span>⚙️</span>
+                            <span id="advancedSettingsTitle">고급 설정</span>
+                        </div>
+                        <div class="toggle-icon" id="toggleIcon">▼</div>
+                    </div>
+                    <div class="advanced-content" id="advancedContent">
+                        <div class="settings-grid">
+                            <div class="setting-group">
+                                <label for="interval" id="intervalLabel">프레임 간격 (초)</label>
+                                <input type="number" id="interval" value="1" step="0.1">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="outputWidth" id="outputWidthLabel">출력 가로 크기 (px)</label>
+                                <input type="number" id="outputWidth" value="420" min="1">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="quality" id="qualityLabel">품질 (1~100)</label>
+                                <input type="number" id="quality" value="1" min="1" max="100">
+                            </div>
+
+                            <div class="setting-group">
+                                <label for="fps" id="fpsLabel">FPS (프레임/초)</label>
+                                <input type="number" id="fps" value="10" min="1" max="60">
+                            </div>
+                        </div>
+
+                        <button id="reconvertBtn" class="convert-btn">
+                            <span id="reconvertText">🔄 새 설정으로 GIF 재생성</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div id="cut-range">⏱️ 구간 선택: 없음</div>
+    <video id="video" crossorigin="anonymous"></video>
+    <canvas id="canvas"></canvas>
 
-    <!-- 변환 설정 옵션 -->
-    <div id="conversion-options">
-        <h3>🔧 변환 설정</h3>
+    <script type="module">
+        // 다국어 지원
+        let currentLanguage = localStorage.getItem('zifLanguage') || 'ko';
 
-        <p class="options">
-            <label>Start time (seconds):
-                <input type="number" step="any" size="4" id="start" name="start" class="text number" value="0">
-            </label>
-            <input class="btn primary small" type="button" id="read_pos_start" value="Use current position"><br>
-
-            <label>End time (seconds):
-                <input type="number" step="any" size="4" id="end" name="end" value="3.0">
-            </label>
-            <input class="btn primary small" type="button" id="read_pos_end" value="Use current position"><br>
-        </p>
-
-        <p class="options">
-            <label for="size" class="fixed-width">Size:</label>
-            <select name="size" id="size">
-                <option value="original">Original (up to 800px)</option>
-                <option value="600">600xAUTO</option>
-                <option value="540">540xAUTO (for Tumblr)</option>
-                <option value="500">500xAUTO</option>
-                <option value="480">480xAUTO</option>
-                <option value="400">400xAUTO</option>
-                <option value="320" selected="selected">320xAUTO</option>
-                <option value="480p">AUTOx480</option>
-                <option value="320p">AUTOx320</option>
-                <option value="1200w">up to 1200x300 (for wide banner)</option>
-                <option value="1200h">up to 300x1200 (for skyscraper banner)</option>
-            </select><br>
-
-            <label for="fps" class="fixed-width">Frame rate (FPS):</label>
-            <select name="fps" id="fps">
-                <option value="5">5 (max 60 seconds)</option>
-                <option value="7">7 (max 42 seconds)</option>
-                <option value="8">8 (max 35 seconds)</option>
-                <option value="10" selected="selected">10 (max 30 seconds)</option>
-                <option value="12">12 (max 25 seconds)</option>
-                <option value="16">16 (max 20 seconds)</option>
-                <option value="20">20 (max 15 seconds)</option>
-                <option value="25">25 (max 12 seconds)</option>
-                <option value="33">33 (max 10 seconds)</option>
-            </select><br>
-
-            <label for="method" class="fixed-width">Method:</label>
-            <select class="video-to-gif-tool" name="method" id="method">
-                <option value="ffmpeg" selected="selected">FFMPEG</option>
-                <option value="preserve-transparency">Preserve transparency</option>
-                <option value="old">FFMPEG + ImageMagick (legacy)</option>
-            </select>
-
-            <span id="o-static" style="display:block;padding-top:4px;">
-                <label class="checkbox">
-                    <input type="checkbox" name="diff" id="optimize-static">
-                    Optimize for static background
-                </label>
-            </span>
-        </p>
-    </div>
-
-    <button id="convert-btn" disabled>🎬 선택 구간 GIF로 변환</button>
-
-    <p><a id="download-link" style="display:none;" download="output.gif">📥 Download GIF</a></p>
-    <img id="gif-preview" src="" alt="GIF preview" style="display: none;" />
-
-    <script src="/ffmpeg.min.js"></script>
-    <script>
-        const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
-
-        const videoUploader = document.getElementById("video-uploader");
-        const message = document.getElementById("message");
-        const convertBtn = document.getElementById("convert-btn");
-        const downloadLink = document.getElementById("download-link");
-        const gifPreview = document.getElementById("gif-preview");
-        const strip = document.getElementById("thumbnail-strip");
-        const selection = document.getElementById("selection");
-        const cutRange = document.getElementById("cut-range");
-        const dropZone = document.getElementById("drop-zone");
-        const conversionOptions = document.getElementById("conversion-options");
-
-        const leftHandle = document.getElementById("left-handle");
-        const rightHandle = document.getElementById("right-handle");
-
-        const THUMB_WIDTH = 102;
-        const NUM_THUMBS = 30;
-        let videoFile;
-        let duration = 0;
-        let startX = 0, endX = 0, isDragging = false;
-        let draggingHandle = null;
-
-        let autoScrollDirection = 0;
-        let autoScrollRAF = null;
-
-        const loadFFmpeg = async () => {
-            try {
-                await ffmpeg.load();
-                if (ffmpeg.isLoaded()) {
-                    // FFmpeg 로드 성공 시에도 메시지를 표시하지 않음
-                } else {
-                    message.style.display = "block";
-                    message.textContent = "❌ FFmpeg failed to initialize properly.";
-                }
-            } catch (err) {
-                console.error("FFmpeg loading error:", err);
-                message.style.display = "block";
-                message.textContent = "❌ Failed to load FFmpeg.";
+        const translations = {
+            ko: {
+                title: 'ZIF',
+                subtitle: 'Premium Video to GIF Converter',
+                tagline: '최고 품질의 GIF 변환을 위한 안전하고 혁신적인 솔루션',
+                uploadText: '비디오 파일을 선택하세요',
+                uploadSubtext: '클릭하거나 드래그 & 드롭으로 업로드하면 자동으로 GIF가 생성됩니다.',
+                previewTitle: '프레임 미리보기',
+                outputTitle: '생성된 GIF',
+                downloadText: '📥 GIF 다운로드',
+                advancedSettingsTitle: '고급 설정',
+                intervalLabel: '프레임 간격 (초)',
+                outputWidthLabel: '출력 가로 크기 (px)',
+                qualityLabel: '품질 (1~100)',
+                fpsLabel: 'FPS (프레임/초)',
+                reconvertText: '🔄 새 설정으로 GIF 재생성',
+                loadingVideo: '비디오를 로딩 중...',
+                extractingFrames: '프레임을 추출 중...',
+                generatingGif: 'GIF 생성 중...',
+                completed: 'GIF 생성 완료!',
+                completedSubtext: '아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다',
+                regeneratingGif: 'GIF 재생성 중...',
+                langToggleText: '한국어'
+            },
+            en: {
+                title: 'ZIF',
+                subtitle: 'Premium Video to GIF Converter',
+                tagline: 'Safe and innovative solution for highest quality GIF conversion',
+                uploadText: 'Select Video File',
+                uploadSubtext: 'Click or drag & drop to upload and automatically generate GIF.',
+                previewTitle: 'Frame Preview',
+                outputTitle: 'Generated GIF',
+                downloadText: '📥 Download GIF',
+                advancedSettingsTitle: 'Advanced Settings',
+                intervalLabel: 'Frame Interval (seconds)',
+                outputWidthLabel: 'Output Width (px)',
+                qualityLabel: 'Quality (1~100)',
+                fpsLabel: 'FPS (frames/second)',
+                reconvertText: '🔄 Regenerate GIF with New Settings',
+                loadingVideo: 'Loading video...',
+                extractingFrames: 'Extracting frames...',
+                generatingGif: 'Generating GIF...',
+                completed: 'GIF Generation Complete!',
+                completedSubtext: 'You can regenerate with different options in advanced settings below',
+                regeneratingGif: 'Regenerating GIF...',
+                langToggleText: 'English'
+            },
+            ja: {
+                title: 'ZIF',
+                subtitle: 'プレミアム Video to GIF コンバーター',
+                tagline: '最高品質のGIF変換のための安全で革新的なソリューション',
+                uploadText: 'ビデオファイルを選択してください',
+                uploadSubtext: 'クリックまたはドラッグ&ドロップでアップロードすると自動的にGIFが生成されます。',
+                previewTitle: 'フレームプレビュー',
+                outputTitle: '生成されたGIF',
+                downloadText: '📥 GIFダウンロード',
+                advancedSettingsTitle: '詳細設定',
+                intervalLabel: 'フレーム間隔（秒）',
+                outputWidthLabel: '出力幅（px）',
+                qualityLabel: '品質（1~100）',
+                fpsLabel: 'FPS（フレーム/秒）',
+                reconvertText: '🔄 新しい設定でGIF再生成',
+                loadingVideo: 'ビデオを読み込み中...',
+                extractingFrames: 'フレームを抽出中...',
+                generatingGif: 'GIF生成中...',
+                completed: 'GIF生成完了！',
+                completedSubtext: '下の詳細設定で他のオプションで再生成できます',
+                regeneratingGif: 'GIF再生成中...',
+                langToggleText: '日本語'
+            },
+            zh: {
+                title: 'ZIF',
+                subtitle: '高级视频转GIF转换器',
+                tagline: '用于最高质量GIF转换的安全创新解决方案',
+                uploadText: '选择视频文件',
+                uploadSubtext: '点击或拖放上传，自动生成GIF。',
+                previewTitle: '帧预览',
+                outputTitle: '生成的GIF',
+                downloadText: '📥 下载GIF',
+                advancedSettingsTitle: '高级设置',
+                intervalLabel: '帧间隔（秒）',
+                outputWidthLabel: '输出宽度（px）',
+                qualityLabel: '质量（1~100）',
+                fpsLabel: 'FPS（帧/秒）',
+                reconvertText: '🔄 使用新设置重新生成GIF',
+                loadingVideo: '正在加载视频...',
+                extractingFrames: '正在提取帧...',
+                generatingGif: '正在生成GIF...',
+                completed: 'GIF生成完成！',
+                completedSubtext: '您可以在下面的高级设置中使用不同选项重新生成',
+                regeneratingGif: '正在重新生成GIF...',
+                langToggleText: '中文'
             }
         };
-        loadFFmpeg();
 
-        // Method 변경 시 옵션 표시/숨김
-        document.getElementById('method').addEventListener('change', function () {
-            if (document.getElementById('method').value === 'ffmpeg') {
-                document.getElementById('o-static').style.display = 'block';
-            } else {
-                document.getElementById('o-static').style.display = 'none';
+        function toggleLanguage() {
+            const languages = ['ko', 'en', 'ja', 'zh'];
+            const currentIndex = languages.indexOf(currentLanguage);
+            currentLanguage = languages[(currentIndex + 1) % languages.length];
+            localStorage.setItem('zifLanguage', currentLanguage);
+            updateAllTexts();
+        }
+
+        // 툴팁 기능
+        const tooltips = {
+            ko: {
+                'interval': '비디오에서 프레임을 추출하는 시간 간격입니다. 값이 작을수록 더 부드러운 GIF가 생성되지만 파일 크기가 커집니다.',
+                'outputWidth': 'GIF의 가로 픽셀 크기입니다. 값이 클수록 화질이 좋아지지만 파일 크기가 커집니다.',
+                'quality': 'GIF의 압축 품질입니다. 1이 최고 품질(최대 파일 크기), 100이 최저 품질(최소 파일 크기)입니다.',
+                'fps': '초당 표시되는 프레임 수입니다. 값이 클수록 빠르게 재생되고, 작을수록 느리게 재생됩니다.'
+            },
+            en: {
+                'interval': 'Time interval for extracting frames from video. Smaller values create smoother GIFs but larger file sizes.',
+                'outputWidth': 'Horizontal pixel size of the GIF. Larger values improve quality but increase file size.',
+                'quality': 'GIF compression quality. 1 is highest quality (largest file size), 100 is lowest quality (smallest file size).',
+                'fps': 'Frames displayed per second. Higher values play faster, lower values play slower.'
+            },
+            ja: {
+                'interval': 'ビデオからフレームを抽出する時間間隔です。値が小さいほどスムーズなGIFが生成されますが、ファイルサイズが大きくなります。',
+                'outputWidth': 'GIFの横ピクセルサイズです。値が大きいほど画質が良くなりますが、ファイルサイズが大きくなります。',
+                'quality': 'GIFの圧縮品質です。1が最高品質（最大ファイルサイズ）、100が最低品質（最小ファイルサイズ）です。',
+                'fps': '1秒間に表示されるフレーム数です。値が大きいほど高速再生され、小さいほど低速再生されます。'
+            },
+            zh: {
+                'interval': '从视频中提取帧的时间间隔。值越小生成的GIF越流畅，但文件大小越大。',
+                'outputWidth': 'GIF的水平像素大小。值越大画质越好，但文件大小越大。',
+                'quality': 'GIF压缩质量。1为最高质量（最大文件大小），100为最低质量（最小文件大小）。',
+                'fps': '每秒显示的帧数。值越大播放越快，越小播放越慢。'
             }
-        });
+        }
 
-        // 현재 위치 사용 버튼들
-        document.getElementById('read_pos_start').addEventListener('click', function () {
-            const [startIdx, endIdx] = getSelectedIndexes();
-            const startSec = ((startIdx / NUM_THUMBS) * duration).toFixed(3);
-            document.getElementById('start').value = startSec;
-        });
+        function setupTooltips() {
+            const settingGroups = document.querySelectorAll('.setting-group');
 
-        document.getElementById('read_pos_end').addEventListener('click', function () {
-            const [startIdx, endIdx] = getSelectedIndexes();
-            const endSec = ((endIdx / NUM_THUMBS) * duration).toFixed(3);
-            document.getElementById('end').value = endSec;
-        });
+            settingGroups.forEach((group, index) => {
+                const input = group.querySelector('input');
+                const inputId = input.id;
 
-        // 드래그앤드롭 이벤트 처리
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+                if (tooltips[currentLanguage] && tooltips[currentLanguage][inputId]) {
+                    // 기존 툴팁 제거
+                    const existingTooltip = group.querySelector('.tooltip');
+                    if (existingTooltip) {
+                        existingTooltip.remove();
+                    }
 
-        dropZone.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-        });
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = tooltips[currentLanguage][inputId];
+                    group.appendChild(tooltip);
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
+                    group.addEventListener('mouseenter', () => {
+                        tooltip.classList.add('show');
+                    });
 
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type === 'video/mp4') {
-                    handleVideoFile(file);
-                } else {
-                    alert('MP4 파일만 지원됩니다.');
+                    group.addEventListener('mouseleave', () => {
+                        tooltip.classList.remove('show');
+                    });
                 }
-            }
-        });
-
-        dropZone.addEventListener('click', () => {
-            videoUploader.click();
-        });
-
-        videoUploader.addEventListener("change", async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                handleVideoFile(file);
-            }
-        });
-
-        async function handleVideoFile(file) {
-            videoFile = file;
-            const url = URL.createObjectURL(file);
-
-            // UI 업데이트
-            dropZone.classList.add('hidden');
-            strip.style.display = "flex";
-            conversionOptions.style.display = "block";
-            convertBtn.disabled = false;
-
-            await renderThumbnails(url);
-        }
-
-        async function renderThumbnails(videoURL) {
-            const video = document.createElement("video");
-            video.src = videoURL;
-            video.crossOrigin = "anonymous";
-            await new Promise(res => (video.onloadedmetadata = res));
-            duration = video.duration;
-
-            // End time 기본값을 실제 동영상 길이로 설정
-            document.getElementById('end').value = duration.toFixed(3);
-
-            strip.innerHTML = "";
-            strip.appendChild(selection);
-            selection.appendChild(leftHandle);
-            selection.appendChild(rightHandle);
-
-            const interval = duration / NUM_THUMBS;
-            const canvas = document.createElement("canvas");
-            canvas.width = 160;
-            canvas.height = 90;
-            const ctx = canvas.getContext("2d");
-
-            for (let i = 0; i < NUM_THUMBS; i++) {
-                const time = i * interval;
-                const frame = await extractFrameAt(video, time, canvas, ctx);
-
-                const img = document.createElement("img");
-                img.src = frame;
-                img.className = "thumb";
-                img.dataset.index = i;
-                img.ondragstart = () => false;
-                strip.appendChild(img);
-            }
-
-            startX = 0;
-            endX = THUMB_WIDTH * 5;
-            updateSelection();
-        }
-
-        async function extractFrameAt(video, time, canvas, ctx) {
-            return new Promise((resolve) => {
-                const seekHandler = () => {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const dataURL = canvas.toDataURL("image/jpeg");
-                    resolve(dataURL);
-                    video.removeEventListener("seeked", seekHandler);
-                };
-                video.addEventListener("seeked", seekHandler);
-                video.currentTime = time;
             });
         }
 
-        function updateSelection() {
-            const x1 = Math.min(startX, endX);
-            const x2 = Math.max(startX, endX);
-            selection.style.left = `${x1}px`;
-            selection.style.width = `${x2 - x1}px`;
+        function updateAllTexts() {
+            const t = translations[currentLanguage];
 
-            leftHandle.style.left = `0px`;
-            rightHandle.style.right = `0px`;
+            document.getElementById('langToggleText').textContent = t.langToggleText;
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('subtitle').textContent = t.subtitle;
+            document.getElementById('tagline').textContent = t.tagline;
+            document.getElementById('uploadText').textContent = t.uploadText;
+            document.getElementById('uploadSubtext').textContent = t.uploadSubtext;
+            document.getElementById('previewTitle').textContent = t.previewTitle;
+            document.getElementById('outputTitle').textContent = t.outputTitle;
+            document.getElementById('downloadText').textContent = t.downloadText;
+            document.getElementById('advancedSettingsTitle').textContent = t.advancedSettingsTitle;
+            document.getElementById('intervalLabel').textContent = t.intervalLabel;
+            document.getElementById('outputWidthLabel').textContent = t.outputWidthLabel;
+            document.getElementById('qualityLabel').textContent = t.qualityLabel;
+            document.getElementById('fpsLabel').textContent = t.fpsLabel;
+            document.getElementById('reconvertText').textContent = t.reconvertText;
 
-            updateTimeRange();
+            // 툴팁 업데이트
+            setupTooltips();
         }
 
-        function updateTimeRange() {
-            if (duration > 0) {
-                const [startIdx, endIdx] = getSelectedIndexes();
-                const startSec = ((startIdx / NUM_THUMBS) * duration).toFixed(1);
-                const endSec = ((endIdx / NUM_THUMBS) * duration).toFixed(1);
-                cutRange.textContent = `⏱️ 구간 선택: ${startSec}s ~ ${endSec}s`;
+        // 페이지 로드 시 언어 설정 적용
+        updateAllTexts();
 
-                // 입력 필드도 업데이트
-                document.getElementById('start').value = startSec;
-                document.getElementById('end').value = endSec;
+
+        // 전역 변수들
+        let defaultInterval = 1;
+        let defaultwWidth = 420;
+        let defaultQuality = 70;
+        let defaultFps = 1;
+
+        let frames = [];
+        let outputWidth = 420;
+        let outputHeight = 0;
+        let currentVideoFile = null;
+
+        // DOM 요소들
+        const videoInput = document.getElementById('videoInput');
+        const reconvertBtn = document.getElementById('reconvertBtn');
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const preview = document.getElementById('preview');
+        const output = document.getElementById('output');
+        const downloadLink = document.getElementById('downloadLink');
+        const intervalInput = document.getElementById('interval');
+        const qualityInput = document.getElementById('quality');
+        const fpsInput = document.getElementById('fps');
+        const outputWidthInput = document.getElementById('outputWidth');
+        const uploadSection = document.getElementById('uploadSection');
+        const outputSection = document.getElementById('outputSection');
+        const previewSection = document.getElementById('previewSection');
+        const advancedToggle = document.getElementById('advancedToggle');
+        const advancedContent = document.getElementById('advancedContent');
+        const toggleIcon = document.getElementById('toggleIcon');
+
+        // 고급 설정 토글
+        advancedToggle.addEventListener('click', () => {
+            advancedContent.classList.toggle('expanded');
+            toggleIcon.classList.toggle('rotated');
+        });
+
+        // 페이지 로드 시 툴팁 설정
+        setupTooltips();
+
+
+        // 드래그 앤 드롭 기능
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.classList.add('dragover');
+        });
+
+        uploadSection.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('video/')) {
+                handleVideoFile(files[0]);
             }
+        });
+
+        uploadSection.addEventListener('click', () => {
+            videoInput.click();
+        });
+
+        // 기존 기능 유지
+        videoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            handleVideoFile(file);
+        });
+
+        async function handleVideoFile(file) {
+            currentVideoFile = file;
+
+            // 로딩 표시
+            uploadSection.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>비디오를 로딩 중...</span>
+                </div>
+            `;
+
+            video.src = URL.createObjectURL(file);
+            await video.play();
+            video.pause();
+
+            // 기본 설정값 적용
+            outputWidth = defaultwWidth;
+            const aspectRatio = video.videoHeight / video.videoWidth;
+            outputHeight = Math.round(outputWidth * aspectRatio);
+
+            // 프레임 추출 표시
+            uploadSection.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>프레임을 추출 중...</span>
+                </div>
+            `;
+
+            // 기본값으로 프레임 추출
+            frames = await extractFrames(video, defaultInterval);
+
+            // 미리보기 섹션 표시
+            previewSection.style.display = 'block';
+
+            // GIF 자동 생성 시작
+            uploadSection.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>GIF 생성 중...</span>
+                </div>
+            `;
+
+            // 자동으로 GIF 생성
+            await generateGIF(frames, defaultwWidth, defaultQuality, defaultFps);
+
+            // 완료 표시
+            uploadSection.innerHTML = `
+                <div class="upload-icon">✅</div>
+                <div class="upload-text">GIF 생성 완료!</div>
+                <div class="upload-subtext">아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다</div>
+            `;
+
+            // 출력 섹션 표시
+            outputSection.style.display = 'block';
         }
 
-        function getSelectedIndexes() {
-            const x1 = Math.min(startX, endX);
-            const x2 = Math.max(startX, endX);
-            const startIdx = Math.floor(x1 / THUMB_WIDTH);
-            const endIdx = Math.floor(x2 / THUMB_WIDTH);
-            return [startIdx, endIdx];
+        // 재변환 버튼 이벤트
+        reconvertBtn.addEventListener('click', async () => {
+            if (!currentVideoFile) return;
+
+            const originalText = reconvertBtn.textContent;
+            reconvertBtn.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>GIF 재생성 중...</span>
+                </div>
+            `;
+            reconvertBtn.disabled = true;
+
+            // 새로운 설정값 적용
+            const newInterval = parseFloat(intervalInput.value) || 1;
+            const newWidth = parseInt(outputWidthInput.value, 10) || 420;
+            const newQuality = parseInt(qualityInput.value, 10) || 1;
+            const newFps = parseInt(fpsInput.value, 10) || 10;
+
+            // 크기가 변경되었으면 프레임 재추출
+            if (newWidth !== defaultwWidth || newInterval !== defaultInterval) {
+                defaultwWidth = newWidth;
+                defaultInterval = newInterval;
+                outputWidth = newWidth;
+                const aspectRatio = video.videoHeight / video.videoWidth;
+                outputHeight = Math.round(outputWidth * aspectRatio);
+
+                frames = await extractFrames(video, newInterval);
+            }
+
+            await generateGIF(frames, newWidth, newQuality, newFps);
+
+            reconvertBtn.textContent = originalText;
+            reconvertBtn.disabled = false;
+        });
+
+        async function generateGIF(frameList, width, quality, fps) {
+            const ctx = canvas.getContext('2d');
+            const imageDatas = [];
+
+            canvas.width = width;
+            canvas.height = outputHeight;
+
+            for (const blob of frameList) {
+                const img = await blobToImage(blob);
+                ctx.drawImage(img, 0, 0, width, canvas.height);
+                const data = ctx.getImageData(0, 0, width, canvas.height);
+                imageDatas.push(data);
+            }
+
+            const worker = new Worker(new URL('./assets/gif.worker.js', import.meta.url), { type: 'module' });
+
+            worker.postMessage({
+                frames: imageDatas,
+                width: width,
+                height: canvas.height,
+                quality,
+                fps
+            });
+
+            return new Promise((resolve, reject) => {
+                worker.addEventListener('message', async (event) => {
+                    const gifBlob = new Blob([event.data], { type: 'image/gif' });
+                    const gifUrl = URL.createObjectURL(gifBlob);
+
+                    const gifImg = document.createElement('img');
+                    gifImg.src = gifUrl;
+
+                    output.innerHTML = '';
+                    output.appendChild(gifImg);
+
+                    downloadLink.href = gifUrl;
+                    downloadLink.style.display = 'inline-block';
+
+                    resolve();
+                });
+
+                worker.addEventListener('error', (e) => {
+                    console.error('GIF 생성 에러:', e);
+                    alert('GIF 생성 중 오류가 발생했습니다.');
+                    reject(e);
+                });
+            });
         }
 
-        function autoScroll() {
-            if (autoScrollDirection === 0 || (!isDragging && !draggingHandle)) return;
+        async function extractFrames(video, interval) {
+            let w = canvas.width;
+            canvas.width = 0;
+            canvas.width = w;
+            const ctx = canvas.getContext('2d');
+            const duration = video.duration;
+            const frameList = [];
 
-            const scrollStep = 5;
+            canvas.width = outputWidth;
+            canvas.height = outputHeight;
 
-            if (autoScrollDirection === -1 && strip.scrollLeft > 0) {
-                strip.scrollLeft -= scrollStep;
-                if (draggingHandle === "left") startX -= scrollStep;
-                else if (draggingHandle === "right") endX -= scrollStep;
-                else endX -= scrollStep;
-            } else if (autoScrollDirection === 1) {
-                strip.scrollLeft += scrollStep;
-                if (draggingHandle === "left") startX += scrollStep;
-                else if (draggingHandle === "right") endX += scrollStep;
-                else endX += scrollStep;
+            preview.innerHTML = '';
+
+            for (let t = 0; t < duration; t += interval) {
+                video.currentTime = t;
+                await waitForSeek(video);
+
+                ctx.drawImage(video, 0, 0, outputWidth, outputHeight);
+                const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(blob);
+                preview.appendChild(img);
+
+                frameList.push(blob);
             }
 
-            updateSelection();
-            autoScrollRAF = requestAnimationFrame(autoScroll);
+            return frameList;
         }
 
-        strip.addEventListener("mousedown", (e) => {
-            if (e.target.classList.contains("handle")) return;
+        function waitForSeek(video) {
+            return new Promise(resolve => {
+                const handler = () => {
+                    video.removeEventListener('seeked', handler);
+                    resolve();
+                };
+                video.addEventListener('seeked', handler);
+            });
+        }
 
-            const bounding = strip.getBoundingClientRect();
-            const isScrollbarClick = (e.offsetY > strip.clientHeight);
-            if (isScrollbarClick) return;
+        function blobToImage(blob) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = URL.createObjectURL(blob);
+            });
+        }
 
-            isDragging = true;
-            const rect = strip.getBoundingClientRect();
-            startX = e.clientX - rect.left + strip.scrollLeft;
-            endX = startX;
-            updateSelection();
-        });
-
-        strip.addEventListener("mousemove", (e) => {
-            if (!isDragging && !draggingHandle) return;
-
-            const rect = strip.getBoundingClientRect();
-            const x = e.clientX - rect.left + strip.scrollLeft;
-
-            if (isDragging) {
-                endX = x;
-            } else if (draggingHandle === "left") {
-                startX = x;
-            } else if (draggingHandle === "right") {
-                endX = x;
-            }
-
-            updateSelection();
-
-            const EDGE_THRESHOLD = 50;
-            const mouseX = e.clientX - rect.left;
-
-            if (mouseX < EDGE_THRESHOLD) {
-                autoScrollDirection = -1;
-            } else if (mouseX > rect.width - EDGE_THRESHOLD) {
-                autoScrollDirection = 1;
-            } else {
-                autoScrollDirection = 0;
-            }
-
-            if ((isDragging || draggingHandle) && !autoScrollRAF) {
-                autoScroll();
-            }
-        });
-
-        document.addEventListener("mouseup", () => {
-            if (isDragging || draggingHandle) {
-                isDragging = false;
-                draggingHandle = null;
-                autoScrollDirection = 0;
-                cancelAnimationFrame(autoScrollRAF);
-                autoScrollRAF = null;
-            }
-        });
-
-        leftHandle.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            draggingHandle = "left";
-        });
-
-        rightHandle.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            draggingHandle = "right";
-        });
-
-        convertBtn.addEventListener("click", async () => {
-            if (!videoFile) return;
-
-            // 설정 값들 가져오기
-            const startSec = parseFloat(document.getElementById('start').value) || 0;
-            const endSec = parseFloat(document.getElementById('end').value) || duration;
-            const clipDuration = Math.max(0.1, endSec - startSec);
-            const gifSize = document.getElementById('size').value;
-            const gifFps = parseInt(document.getElementById('fps').value);
-            const method = document.getElementById('method').value;
-            const optimizeStatic = document.getElementById('optimize-static').checked;
-
-            message.style.display = "block";
-            message.textContent = `⏳ Converting ${startSec.toFixed(1)}s ~ ${endSec.toFixed(1)}s to GIF...`;
-
-            ffmpeg.FS("writeFile", "input.mp4", await fetchFile(videoFile));
-
-            // 크기 설정
-            let scaleFilter = "scale=320:-1";
-            if (gifSize === "original") {
-                scaleFilter = "scale='min(800,iw)':'min(600,ih)':force_original_aspect_ratio=decrease";
-            } else if (gifSize.endsWith("p")) {
-                const height = gifSize.replace("p", "");
-                scaleFilter = `scale=-1:${height}`;
-            } else if (gifSize.endsWith("w")) {
-                scaleFilter = "scale='min(1200,iw)':'min(300,ih)':force_original_aspect_ratio=decrease";
-            } else if (gifSize.endsWith("h")) {
-                scaleFilter = "scale='min(300,iw)':'min(1200,ih)':force_original_aspect_ratio=decrease";
-            } else if (!isNaN(gifSize)) {
-                scaleFilter = `scale=${gifSize}:-1`;
-            }
-
-            // 고품질 팔레트 생성
-            let filterComplex = scaleFilter;
-            if (method === "ffmpeg") {
-                filterComplex = `${scaleFilter},split[s0][s1];[s0]palettegen=max_colors=256[p];[s1][p]paletteuse=dither=bayer:bayer_scale=3`;
-            }
-
-            const ffmpegArgs = [
-                "-i", "input.mp4",
-                "-ss", `${startSec}`,
-                "-t", `${clipDuration}`,
-                "-r", `${gifFps}`,
-                "-filter_complex", filterComplex
-            ];
-
-            if (method === "preserve-transparency") {
-                ffmpegArgs.push("-f", "gif", "-pix_fmt", "rgba");
-            }
-
-            ffmpegArgs.push("output.gif");
-
-            await ffmpeg.run(...ffmpegArgs);
-
-            const data = ffmpeg.FS("readFile", "output.gif");
-            const gifBlob = new Blob([data.buffer], { type: "image/gif" });
-            const gifURL = URL.createObjectURL(gifBlob);
-
-            downloadLink.href = gifURL;
-            downloadLink.style.display = "inline";
-            gifPreview.src = gifURL;
-            gifPreview.style.display = "block";
-
-            const fileSizeMB = (gifBlob.size / (1024 * 1024)).toFixed(2);
-            message.textContent = `✅ Done! GIF created (${fileSizeMB}MB). Download below.`;
-        });
-
-        // 전체 페이지에서 드래그앤드롭 방지
-        document.addEventListener('dragover', (e) => {
-            e.preventDefault();
-        });
-
-        document.addEventListener('drop', (e) => {
-            e.preventDefault();
-        });
+        // 전체 페이지 드래그 방지
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
     </script>
 </body>
 
