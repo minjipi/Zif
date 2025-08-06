@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎞️ ZIF - 프리미엄 Video to GIF 변환기</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bitcount:wght@400&display=swap"
+    rel="stylesheet">
+  <script type="module" crossorigin src="/assets/index-IZ1oAhzy.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DKqU-_jY.css">
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <button class="language-toggle" onclick="toggleLanguage()">
+        <span id="langToggleText">한국어</span>
+      </button>
+      <h1 id="title">ZIF</h1>
+      <h3 id="subtitle">Premium Video to GIF Converter</h3>
+      <p class="tagline" id="tagline">최고 품질의 GIF 변환을 위한 안전하고 혁신적인 솔루션</p>
+    </div>
+
+    <div class="content">
+      <div class="upload-section" id="uploadSection">
+        <div class="upload-icon">📁</div>
+        <div class="upload-text" id="uploadText">비디오 파일을 선택하세요</div>
+        <div class="upload-subtext" id="uploadSubtext">클릭하거나 드래그 & 드롭으로 업로드하면 자동으로 GIF가 생성됩니다.</div>
+        <input type="file" id="videoInput" accept="video/*">
+      </div>
+
+      <div class="preview-section" id="previewSection" style="display: none;">
+        <div class="section-title">
+          <span>📸</span>
+          <span id="previewTitle">프레임 미리보기</span>
+        </div>
+        <div id="preview"></div>
+      </div>
+
+      <div class="output-section" id="outputSection" style="display: none;">
+        <div class="section-title">
+          <span>✨</span>
+          <span id="outputTitle">생성된 GIF</span>
+        </div>
+        <div id="output"></div>
+        <a id="downloadLink" style="display:none;" download="output.gif">
+          <span id="downloadText">📥 GIF 다운로드</span>
+        </a>
+
+        <div class="advanced-settings" id="advancedSettings">
+          <div class="advanced-settings-header" id="advancedToggle">
+            <div class="advanced-settings-title">
+              <span>⚙️</span>
+              <span id="advancedSettingsTitle">고급 설정</span>
+            </div>
+            <div class="toggle-icon" id="toggleIcon">▼</div>
+          </div>
+          <div class="advanced-content" id="advancedContent">
+            <div class="settings-grid">
+              <div class="setting-group">
+                <label for="interval" id="intervalLabel">프레임 간격 (초)</label>
+                <input type="number" id="interval" value="1" step="0.1">
+              </div>
+
+              <div class="setting-group">
+                <label for="outputWidth" id="outputWidthLabel">출력 가로 크기 (px)</label>
+                <input type="number" id="outputWidth" value="420" min="1">
+              </div>
+
+              <div class="setting-group">
+                <label for="quality" id="qualityLabel">품질 (1~100)</label>
+                <input type="number" id="quality" value="1" min="1" max="100">
+              </div>
+
+              <div class="setting-group">
+                <label for="fps" id="fpsLabel">FPS (프레임/초)</label>
+                <input type="number" id="fps" value="10" min="1" max="60">
+              </div>
+            </div>
+
+            <button id="reconvertBtn" class="convert-btn">
+              <span id="reconvertText">🔄 새 설정으로 GIF 재생성</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <video id="video" crossorigin="anonymous"></video>
+  <canvas id="canvas"></canvas>
+  <script src="/coi-serviceworker.js"></script>
+</body>
+
+</html>
