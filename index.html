@@ -148,6 +148,8 @@
             border-color: #f6ab7a;
             box-shadow: 0 8px 25px rgba(246, 171, 122, 0.15);
             transform: translateY(-2px);
+            position: relative;
+            z-index: 1;
         }
 
         .tooltip {
@@ -496,9 +498,6 @@
 <body>
     <div class="container">
         <div class="header">
-            <button class="language-toggle" onclick="toggleLanguage()">
-                <span id="langToggleText">한국어</span>
-            </button>
             <h1 id="title">ZIF</h1>
             <h3 id="subtitle">Premium Video to GIF Converter</h3>
             <p class="tagline" id="tagline">최고 품질의 GIF 변환을 위한 안전하고 혁신적인 솔루션</p>
@@ -527,7 +526,7 @@
                 </div>
                 <div id="output"></div>
                 <a id="downloadLink" style="display:none;" download="output.gif">
-                    <span id="downloadText">📥 GIF 다운로드</span>
+                    <span id="downloadText">GIF 다운로드</span>
                 </a>
 
                 <div class="advanced-settings" id="advancedSettings">
@@ -538,7 +537,7 @@
                         </div>
                         <div class="toggle-icon" id="toggleIcon">▼</div>
                     </div>
-                    <div class="advanced-content" id="advancedContent">
+                    <div class="advanced-content expanded" id="advancedContent">
                         <div class="settings-grid">
                             <div class="setting-group">
                                 <label for="interval" id="intervalLabel">프레임 간격 (초)</label>
@@ -573,7 +572,10 @@
     <video id="video" crossorigin="anonymous"></video>
     <canvas id="canvas"></canvas>
     <script src="/coi-serviceworker.js"></script>
+
     <script type="module">
+
+
         // 다국어 지원
         let currentLanguage = localStorage.getItem('zifLanguage') || 'ko';
 
@@ -586,7 +588,7 @@
                 uploadSubtext: '클릭하거나 드래그 & 드롭으로 업로드하면 자동으로 GIF가 생성됩니다.',
                 previewTitle: '프레임 미리보기',
                 outputTitle: '생성된 GIF',
-                downloadText: '📥 GIF 다운로드',
+                downloadText: 'GIF 다운로드',
                 advancedSettingsTitle: '고급 설정',
                 intervalLabel: '프레임 간격 (초)',
                 outputWidthLabel: '출력 가로 크기 (px)',
@@ -672,13 +674,6 @@
             }
         };
 
-        function toggleLanguage() {
-            const languages = ['ko', 'en', 'ja', 'zh'];
-            const currentIndex = languages.indexOf(currentLanguage);
-            currentLanguage = languages[(currentIndex + 1) % languages.length];
-            localStorage.setItem('zifLanguage', currentLanguage);
-            updateAllTexts();
-        }
 
         // 툴팁 기능
         const tooltips = {
@@ -741,7 +736,6 @@
         function updateAllTexts() {
             const t = translations[currentLanguage];
 
-            document.getElementById('langToggleText').textContent = t.langToggleText;
             document.getElementById('title').textContent = t.title;
             document.getElementById('subtitle').textContent = t.subtitle;
             document.getElementById('tagline').textContent = t.tagline;
@@ -761,8 +755,15 @@
             setupTooltips();
         }
 
+        if (!localStorage.getItem('zifLanguage')) {
+            const browserLang = navigator.language.slice(0, 2); // 'en-US' → 'en'
+            const supportedLangs = ['ko', 'en', 'ja', 'zh'];
+            currentLanguage = supportedLangs.includes(browserLang) ? browserLang : 'en';
+            localStorage.setItem('zifLanguage', currentLanguage);
+        }
         // 페이지 로드 시 언어 설정 적용
         updateAllTexts();
+
 
 
         // 전역 변수들
@@ -1029,6 +1030,7 @@
         document.addEventListener('dragover', (e) => e.preventDefault());
         document.addEventListener('drop', (e) => e.preventDefault());
     </script>
+
 </body>
 
 </html>
