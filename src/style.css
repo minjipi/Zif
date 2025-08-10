@@ -138,6 +138,8 @@ body {
   border-color: #f6ab7a;
   box-shadow: 0 8px 25px rgba(246, 171, 122, 0.15);
   transform: translateY(-2px);
+  position: relative;
+  z-index: 1;
 }
 
 .tooltip {
