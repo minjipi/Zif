@@ -278,62 +278,6 @@ videoInput.addEventListener("change", async (e) => {
   handleVideoFile(file);
 });
 
-// async function handleVideoFile(file) {
-//   currentVideoFile = file;
-
-//   // 로딩 표시
-//   uploadSection.innerHTML = `
-//                 <div class="loading">
-//                     <div class="spinner"></div>
-//                     <span>비디오를 로딩 중...</span>
-//                 </div>
-//             `;
-
-//   video.src = URL.createObjectURL(file);
-//   await video.play();
-//   video.pause();
-
-//   // 기본 설정값 적용
-//   outputWidth = defaultwWidth;
-//   const aspectRatio = video.videoHeight / video.videoWidth;
-//   outputHeight = Math.round(outputWidth * aspectRatio);
-
-//   // 프레임 추출 표시
-//   uploadSection.innerHTML = `
-//                 <div class="loading">
-//                     <div class="spinner"></div>
-//                     <span>프레임을 추출 중...</span>
-//                 </div>
-//             `;
-
-//   // 기본값으로 프레임 추출
-//   frames = await extractFrames(video, defaultInterval);
-
-//   // 미리보기 섹션 표시
-//   previewSection.style.display = "block";
-
-//   // GIF 자동 생성 시작
-//   uploadSection.innerHTML = `
-//                 <div class="loading">
-//                     <div class="spinner"></div>
-//                     <span>GIF 생성 중...</span>
-//                 </div>
-//             `;
-
-//   // 자동으로 GIF 생성
-//   await generateGIF(frames, defaultwWidth, defaultQuality, defaultFps);
-
-//   // 완료 표시
-//   uploadSection.innerHTML = `
-//                 <div class="upload-icon">✅</div>
-//                 <div class="upload-text">GIF 생성 완료!</div>
-//                 <div class="upload-subtext">아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다</div>
-//             `;
-
-//   // 출력 섹션 표시
-//   outputSection.style.display = "block";
-// }
-
 async function handleVideoFile(file) {
   currentVideoFile = file;
 
