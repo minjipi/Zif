@@ -8,13 +8,13 @@ const translations = {
   ko: {
     title: "ZIF",
     subtitle: "Premium Video to GIF Converter",
-    tagline: "최고 품질의 GIF 변환을 위한 안전하고 혁신적인 솔루션",
+    tagline: "개인 정보 걱정 없는 최고 품질의 GIF 변환 프로그램",
     uploadText: "비디오 파일을 선택하세요",
     uploadSubtext:
       "클릭하거나 드래그 & 드롭으로 업로드하면 자동으로 GIF가 생성됩니다.",
     previewTitle: "프레임 미리보기",
     outputTitle: "생성된 GIF",
-    downloadText: "📥 GIF 다운로드",
+    downloadText: "GIF 다운로드",
     advancedSettingsTitle: "고급 설정",
     intervalLabel: "프레임 간격 (초)",
     outputWidthLabel: "출력 가로 크기 (px)",
@@ -32,13 +32,14 @@ const translations = {
   en: {
     title: "ZIF",
     subtitle: "Premium Video to GIF Converter",
-    tagline: "Safe and innovative solution for highest quality GIF conversion",
+    tagline:
+      "The best quality GIF converter without worrying about your privacy.",
     uploadText: "Select Video File",
     uploadSubtext:
       "Click or drag & drop to upload and automatically generate GIF.",
     previewTitle: "Frame Preview",
     outputTitle: "Generated GIF",
-    downloadText: "📥 Download GIF",
+    downloadText: "Download GIF",
     advancedSettingsTitle: "Advanced Settings",
     intervalLabel: "Frame Interval (seconds)",
     outputWidthLabel: "Output Width (px)",
@@ -208,10 +209,10 @@ function updateAllTexts() {
 updateAllTexts();
 
 // 전역 변수들
-let defaultInterval = 1;
+let defaultInterval = 0.3;
 let defaultwWidth = 420;
-let defaultQuality = 70;
-let defaultFps = 1;
+let defaultQuality = 80;
+let defaultFps = 10;
 
 let frames = [];
 let outputWidth = 420;
@@ -277,59 +278,124 @@ videoInput.addEventListener("change", async (e) => {
   handleVideoFile(file);
 });
 
+// async function handleVideoFile(file) {
+//   currentVideoFile = file;
+
+//   // 로딩 표시
+//   uploadSection.innerHTML = `
+//                 <div class="loading">
+//                     <div class="spinner"></div>
+//                     <span>비디오를 로딩 중...</span>
+//                 </div>
+//             `;
+
+//   video.src = URL.createObjectURL(file);
+//   await video.play();
+//   video.pause();
+
+//   // 기본 설정값 적용
+//   outputWidth = defaultwWidth;
+//   const aspectRatio = video.videoHeight / video.videoWidth;
+//   outputHeight = Math.round(outputWidth * aspectRatio);
+
+//   // 프레임 추출 표시
+//   uploadSection.innerHTML = `
+//                 <div class="loading">
+//                     <div class="spinner"></div>
+//                     <span>프레임을 추출 중...</span>
+//                 </div>
+//             `;
+
+//   // 기본값으로 프레임 추출
+//   frames = await extractFrames(video, defaultInterval);
+
+//   // 미리보기 섹션 표시
+//   previewSection.style.display = "block";
+
+//   // GIF 자동 생성 시작
+//   uploadSection.innerHTML = `
+//                 <div class="loading">
+//                     <div class="spinner"></div>
+//                     <span>GIF 생성 중...</span>
+//                 </div>
+//             `;
+
+//   // 자동으로 GIF 생성
+//   await generateGIF(frames, defaultwWidth, defaultQuality, defaultFps);
+
+//   // 완료 표시
+//   uploadSection.innerHTML = `
+//                 <div class="upload-icon">✅</div>
+//                 <div class="upload-text">GIF 생성 완료!</div>
+//                 <div class="upload-subtext">아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다</div>
+//             `;
+
+//   // 출력 섹션 표시
+//   outputSection.style.display = "block";
+// }
+
 async function handleVideoFile(file) {
   currentVideoFile = file;
 
-  // 로딩 표시
+  // 1) 비디오 로딩 UI
   uploadSection.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <span>비디오를 로딩 중...</span>
-                </div>
-            `;
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>비디오를 로딩 중...</span>
+    </div>
+  `;
 
+  // 2) 비디오 소스 지정
   video.src = URL.createObjectURL(file);
-  await video.play();
-  video.pause();
 
-  // 기본 설정값 적용
+  // 3) 메타데이터 로드 대기 (videoWidth/Height 안전 접근)
+  await new Promise((resolve) => {
+    if (video.readyState >= 1) return resolve(); // HAVE_METADATA
+    video.addEventListener("loadedmetadata", resolve, { once: true });
+  });
+
+  // 4) 기본 출력 폭 = 원본 가로폭(최대 900px)
+  defaultwWidth = Math.min(video.videoWidth, 900);
   outputWidth = defaultwWidth;
+  outputWidthInput.value = defaultwWidth;
+
+  // 5) 비율 유지하여 높이 계산
   const aspectRatio = video.videoHeight / video.videoWidth;
   outputHeight = Math.round(outputWidth * aspectRatio);
 
-  // 프레임 추출 표시
+  // 6) 프레임 추출 UI
   uploadSection.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <span>프레임을 추출 중...</span>
-                </div>
-            `;
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>프레임을 추출 중...</span>
+    </div>
+  `;
 
-  // 기본값으로 프레임 추출
+  // 7) 기본값으로 프레임 추출
   frames = await extractFrames(video, defaultInterval);
 
-  // 미리보기 섹션 표시
+  // 8) 미리보기 섹션 표시
   previewSection.style.display = "block";
 
-  // GIF 자동 생성 시작
+  // 9) GIF 생성 UI
   uploadSection.innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                    <span>GIF 생성 중...</span>
-                </div>
-            `;
+    <div class="loading">
+      <div class="spinner"></div>
+      <span>GIF 생성 중...</span>
+    </div>
+  `;
 
-  // 자동으로 GIF 생성
+  // 10) 자동으로 GIF 생성 (quality/fps는 기존 기본값 사용)
   await generateGIF(frames, defaultwWidth, defaultQuality, defaultFps);
 
-  // 완료 표시
+  // 11) 완료 UI
   uploadSection.innerHTML = `
-                <div class="upload-icon">✅</div>
-                <div class="upload-text">GIF 생성 완료!</div>
-                <div class="upload-subtext">아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다</div>
-            `;
+    <div class="upload-icon">✅</div>
+    <div class="upload-text">GIF 생성 완료!</div>
+    <div class="upload-subtext">아래 고급 설정에서 다른 옵션으로 재생성할 수 있습니다</div>
+  `;
 
-  // 출력 섹션 표시
+  // 12) 출력 섹션 표시
   outputSection.style.display = "block";
 }
 
